@@ -55,6 +55,7 @@
     "rules.xp_no_cooldown.PlayerMixin"
   ],
   "client": [
+    "client.AbstractClientPlayerMixin",
     "rules.creative_no_clip.client.LevelRendererMixin"
   ],
   "injectors": {

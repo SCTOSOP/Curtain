@@ -4,6 +4,7 @@ import dev.dubhe.curtain.api.PlanExecution;
 import dev.dubhe.curtain.api.rules.RuleManager;
 import dev.dubhe.curtain.events.MyEventHandlers;
 import dev.dubhe.curtain.features.logging.LoggerManager;
+import dev.dubhe.curtain.network.CurtainNetwork;
 import dev.dubhe.curtain.utils.TranslationHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -31,6 +32,7 @@ public class Curtain implements ICurtain {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
         MyEventHandlers.register();
+        CurtainNetwork.register();
 
         LoggerManager.registryBuiltinLogger();
     }

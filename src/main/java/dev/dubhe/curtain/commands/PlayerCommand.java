@@ -13,6 +13,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.dubhe.curtain.CurtainRules;
 import dev.dubhe.curtain.features.player.fakes.IServerPlayer;
 import dev.dubhe.curtain.features.player.helpers.EntityPlayerActionPack;
+import dev.dubhe.curtain.features.player.helpers.FakePlayerSkinManager;
 import dev.dubhe.curtain.features.player.patches.EntityPlayerMPFake;
 import dev.dubhe.curtain.utils.CommandHelper;
 import dev.dubhe.curtain.utils.Messenger;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -67,6 +69,16 @@ public class PlayerCommand {
                                         .executes(c -> manipulate(c, ap -> ap.setSlot(IntegerArgumentType.getInteger(c, "slot"))))))
                         .then(literal("kill").executes(PlayerCommand::kill))
                         .then(literal("shadow").executes(PlayerCommand::shadow))
+                        .then(literal("skin")
+                                .then(literal("set")
+                                        .then(argument("skin", StringArgumentType.word())
+                                                .suggests((c, b) -> suggest(FakePlayerSkinManager.listSkins(c.getSource().getServer()), b))
+                                                .executes(c -> setSkin(c, "classic"))
+                                                .then(argument("model", StringArgumentType.word())
+                                                        .suggests((c, b) -> suggest(List.of("classic", "slim"), b))
+                                                        .executes(c -> setSkin(c, StringArgumentType.getString(c, "model"))))))
+                                .then(literal("clear").executes(PlayerCommand::clearSkin))
+                                .then(literal("list").executes(PlayerCommand::listSkins)))
                         .then(literal("mount").executes(manipulation(ap -> ap.mount(true)))
                                 .then(literal("anything").executes(manipulation(ap -> ap.mount(false)))))
                         .then(literal("dismount").executes(manipulation(EntityPlayerActionPack::dismount)))
@@ -147,6 +159,13 @@ public class PlayerCommand {
         return server.getPlayerList().getPlayerByName(playerName);
     }
 
+    private static String getSpawnedPlayerName(CommandContext<CommandSourceStack> context) {
+        String playerName = StringArgumentType.getString(context, "player");
+        String prefix = "none".equals(CurtainRules.fakePlayerNamePrefix) || playerName.startsWith(CurtainRules.fakePlayerNamePrefix) ? "" : CurtainRules.fakePlayerNamePrefix;
+        String suffix = "none".equals(CurtainRules.fakePlayerNameSuffix) || playerName.endsWith(CurtainRules.fakePlayerNameSuffix) ? "" : CurtainRules.fakePlayerNameSuffix;
+        return prefix + playerName + suffix;
+    }
+
     private static boolean cantManipulate(CommandContext<CommandSourceStack> context) {
         Player player = getPlayer(context);
         if (player == null) {
@@ -178,10 +197,7 @@ public class PlayerCommand {
     }
 
     private static boolean cantSpawn(CommandContext<CommandSourceStack> context) {
-        String playerName = StringArgumentType.getString(context, "player");
-        String prefix = "none".equals(CurtainRules.fakePlayerNamePrefix) || playerName.startsWith(CurtainRules.fakePlayerNamePrefix) ? "" : CurtainRules.fakePlayerNamePrefix;
-        String suffix = "none".equals(CurtainRules.fakePlayerNameSuffix) || playerName.endsWith(CurtainRules.fakePlayerNameSuffix) ? "" : CurtainRules.fakePlayerNameSuffix;
-        playerName = prefix + playerName + suffix;
+        String playerName = getSpawnedPlayerName(context);
         MinecraftServer server = context.getSource().getServer();
         PlayerList manager = server.getPlayerList();
         Player player = manager.getPlayerByName(playerName);
@@ -276,10 +292,7 @@ public class PlayerCommand {
             // Force override flying to false for survival-like players, or they will fly too
             flying = false;
         }
-        String playerName = StringArgumentType.getString(context, "player");
-        String prefix = "none".equals(CurtainRules.fakePlayerNamePrefix) || playerName.startsWith(CurtainRules.fakePlayerNamePrefix) ? "" : CurtainRules.fakePlayerNamePrefix;
-        String suffix = "none".equals(CurtainRules.fakePlayerNameSuffix) || playerName.endsWith(CurtainRules.fakePlayerNameSuffix) ? "" : CurtainRules.fakePlayerNameSuffix;
-        playerName = prefix + playerName + suffix;
+        String playerName = getSpawnedPlayerName(context);
         if (playerName.length() > maxPlayerLength(source.getServer())) {
             Messenger.m(context.getSource(), "rb Player name: " + playerName + " is too long");
             return 0;
@@ -340,5 +353,52 @@ public class PlayerCommand {
         if (sendingPlayer != player && cantManipulate(context)) return 0;
         EntityPlayerMPFake.createShadow(player.server, player);
         return 1;
+    }
+
+    private static int setSkin(CommandContext<CommandSourceStack> context, String model) {
+        MinecraftServer server = context.getSource().getServer();
+        String playerName = getSpawnedPlayerName(context);
+        String skin = StringArgumentType.getString(context, "skin");
+        try {
+            FakePlayerSkinManager.setSkin(server, playerName, skin, model);
+            Messenger.m(context.getSource(), "gi Set fake player skin for ", "wb " + playerName, "g  to ", "wb " + skin);
+            if (server.getPlayerList().getPlayerByName(playerName) instanceof EntityPlayerMPFake fakePlayer) {
+                FakePlayerSkinManager.syncToAll(server, fakePlayer);
+            }
+            return 1;
+        } catch (IllegalArgumentException | IOException exception) {
+            Messenger.m(context.getSource(), "rb " + exception.getMessage());
+            Messenger.m(context.getSource(), "y Put png files in: " + FakePlayerSkinManager.getSkinDirectory(server));
+            return 0;
+        }
+    }
+
+    private static int clearSkin(CommandContext<CommandSourceStack> context) {
+        MinecraftServer server = context.getSource().getServer();
+        String playerName = getSpawnedPlayerName(context);
+        try {
+            ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
+            FakePlayerSkinManager.clearSkin(server, playerName);
+            Messenger.m(context.getSource(), "gi Cleared fake player skin for ", "wb " + playerName);
+            if (player instanceof EntityPlayerMPFake fakePlayer) {
+                FakePlayerSkinManager.syncClearToAll(server, fakePlayer);
+            }
+            return 1;
+        } catch (IOException exception) {
+            Messenger.m(context.getSource(), "rb " + exception.getMessage());
+            return 0;
+        }
+    }
+
+    private static int listSkins(CommandContext<CommandSourceStack> context) {
+        MinecraftServer server = context.getSource().getServer();
+        Collection<String> skins = FakePlayerSkinManager.listSkins(server);
+        Messenger.m(context.getSource(), "gi Skin directory: ", "w " + FakePlayerSkinManager.getSkinDirectory(server));
+        if (skins.isEmpty()) {
+            Messenger.m(context.getSource(), "y No png skins found");
+        } else {
+            Messenger.m(context.getSource(), "gi Skins: ", "w " + String.join(", ", skins));
+        }
+        return skins.size();
     }
 }

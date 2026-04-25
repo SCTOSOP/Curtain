@@ -3,6 +3,7 @@ package dev.dubhe.curtain.features.player.patches;
 import com.mojang.authlib.GameProfile;
 import dev.dubhe.curtain.CurtainRules;
 import dev.dubhe.curtain.features.player.fakes.IServerPlayer;
+import dev.dubhe.curtain.features.player.helpers.FakePlayerSkinManager;
 import dev.dubhe.curtain.utils.Messenger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
@@ -75,6 +76,7 @@ public class EntityPlayerMPFake extends ServerPlayer {
 
             instance.entityData.set(DATA_PLAYER_MODE_CUSTOMISATION, (byte) 0x7f);
             instance.getAbilities().flying = isflying;
+            FakePlayerSkinManager.syncToAll(server, instance);
             return instance;
         } catch (Exception exception) {
             Messenger.print_server_message(server, exception.getMessage());
