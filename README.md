@@ -1,5 +1,8 @@
 # **Curtain MOD** | [窗帘](/docs/README.CN.md)
 
+This is an unofficial fork of [Gu-ZT/Curtain](https://github.com/Gu-ZT/Curtain), originally created by [Gu-ZT](https://github.com/Gu-ZT).
+This fork currently maintains the Forge 1.20.1 branch and adds custom fake player skin support for the `/player` command.
+
 [![Development Builds](https://github.com/Gu-ZT/Curtain/actions/workflows/build.yml/badge.svg)](https://github.com/Gu-ZT/Curtain/actions/workflows/build.yml)
 [![CurseForge downloads](http://cf.way2muchnoise.eu/full_845348_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/curtain)
 [![Modrinth downloads](https://img.shields.io/modrinth/dt/curtain?color=00AF5C&label=Modrinth%20downloads&logo=modrinth)](https://modrinth.com/mod/curtain)

@@ -1,5 +1,8 @@
 # [Curtain MOD](../README.md) | **窗帘**
 
+这是 [Gu-ZT/Curtain](https://github.com/Gu-ZT/Curtain) 的非官方 fork，原作者为 [Gu-ZT](https://github.com/Gu-ZT)。
+本 fork 目前只维护 Forge 1.20.1 分支，并为 `/player` 命令增加自定义假人皮肤支持。
+
 [![Development Builds](https://github.com/Gu-ZT/Curtain/actions/workflows/build.yml/badge.svg)](https://github.com/Gu-ZT/Curtain/actions/workflows/build.yml)
 [![CurseForge downloads](http://cf.way2muchnoise.eu/full_845348_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/curtain)
 [![Modrinth downloads](https://img.shields.io/modrinth/dt/curtain?color=00AF5C&label=Modrinth%20downloads&logo=modrinth)](https://modrinth.com/mod/curtain)
